@@ -24,6 +24,12 @@
 #define WSMANCALL 
 #endif
 
+#ifdef _WIN32
+#define WSMAN_EXPORT __declspec(dllexport)
+#else
+#define WSMAN_EXPORT __attribute__((visibility("default")))
+#endif
+
 #define PAL_T(_x) _x
 
 /* Error codes needed for compatibility with Windows WinRM */
@@ -280,7 +286,7 @@ typedef struct WSMAN_API *WSMAN_API_HANDLE;
 // Returns a nonzero error code upon failure
 // -----------------------------------------------------------------------------
 //
-uint32_t WSMANAPI WSManInitialize(
+WSMAN_EXPORT uint32_t WSMANAPI WSManInitialize(
     uint32_t flags,
     WSMAN_API_HANDLE *apiHandle
     );
@@ -294,7 +300,7 @@ uint32_t WSMANAPI WSManInitialize(
 // Returns non zero error code upon failure
 // -----------------------------------------------------------------------------
 //
-uint32_t WSMANAPI WSManDeinitialize(
+WSMAN_EXPORT uint32_t WSMANAPI WSManDeinitialize(
     WSMAN_API_HANDLE apiHandle,
     uint32_t flags
     );
@@ -314,7 +320,7 @@ uint32_t WSMANAPI WSManDeinitialize(
 //  the messageLengthUsed parameter contains the requested size of the buffer.
 // -----------------------------------------------------------------------------
 //
-uint32_t WSMANAPI WSManGetErrorMessage(
+WSMAN_EXPORT uint32_t WSMANAPI WSManGetErrorMessage(
     WSMAN_API_HANDLE apiHandle,
     uint32_t flags,            // reserved for future use; must be 0
     const WCHAR* languageCode,    // the RFC 3066 language code; it can be NULL
@@ -375,7 +381,7 @@ typedef struct WSMAN_SESSION *WSMAN_SESSION_HANDLE;
 // Returns a non zero error code upon failure
 // -----------------------------------------------------------------------------
 //
-uint32_t WSMANAPI WSManCreateSession(
+WSMAN_EXPORT uint32_t WSMANAPI WSManCreateSession(
     WSMAN_API_HANDLE apiHandle,
     const WCHAR* connection,             // if NULL, then connection will default to localhost
     uint32_t flags,
@@ -391,7 +397,7 @@ uint32_t WSMANAPI WSManCreateSession(
 // Returns a non zero error code upon failure
 // -----------------------------------------------------------------------------
 //
-uint32_t WSMANAPI WSManCloseSession(
+WSMAN_EXPORT uint32_t WSMANAPI WSManCloseSession(
     WSMAN_SESSION_HANDLE session,
     uint32_t flags
     );
@@ -464,7 +470,7 @@ typedef enum WSManSessionOption WSManSessionOption;
 //  Returns a non zero error code upon failure
 // -----------------------------------------------------------------------------
 //
-uint32_t WSMANAPI WSManSetSessionOption(
+WSMAN_EXPORT uint32_t WSMANAPI WSManSetSessionOption(
     WSMAN_SESSION_HANDLE session,
     WSManSessionOption option,
     WSMAN_DATA *data
@@ -476,7 +482,7 @@ uint32_t WSMANAPI WSManSetSessionOption(
 //  Returns a non zero error code upon failure
 // -----------------------------------------------------------------------------
 //
-uint32_t WSMANAPI WSManGetSessionOptionAsDword(
+WSMAN_EXPORT uint32_t WSMANAPI WSManGetSessionOptionAsDword(
     WSMAN_SESSION_HANDLE session,
     WSManSessionOption option,
     uint32_t *value
@@ -488,7 +494,7 @@ uint32_t WSMANAPI WSManGetSessionOptionAsDword(
 //  Returns a non zero error code upon failure
 // -----------------------------------------------------------------------------
 //
-uint32_t WSMANAPI WSManGetSessionOptionAsString(
+WSMAN_EXPORT uint32_t WSMANAPI WSManGetSessionOptionAsString(
     WSMAN_SESSION_HANDLE session,
     WSManSessionOption option,
     uint32_t stringLength,
@@ -558,7 +564,7 @@ enum WSManCallbackFlags
 //  after the callback returns.
 // -----------------------------------------------------------------------------
 //
-uint32_t WSMANAPI WSManCloseOperation(
+WSMAN_EXPORT uint32_t WSMANAPI WSManCloseOperation(
     WSMAN_OPERATION_HANDLE operationHandle,
     uint32_t flags
     );
@@ -871,8 +877,7 @@ typedef struct _WSMAN_COMMAND_ARG_SET
 #define WSMAN_SIGNAL_SHELL_CODE_CTRL_C WSMAN_SHELL_NS PAL_T("/signal/ctrl_c")
 #define WSMAN_SIGNAL_SHELL_CODE_CTRL_BREAK WSMAN_SHELL_NS PAL_T("/signal/ctrl_break")
 
-void WSMANAPI WSManSignalShell(
-
+WSMAN_EXPORT void WSMANAPI WSManSignalShell(
     WSMAN_SHELL_HANDLE shell,
     WSMAN_COMMAND_HANDLE command,         // if NULL, the Signal will be sent to the shell
     uint32_t flags,
@@ -887,8 +892,7 @@ void WSMANAPI WSManSignalShell(
 // -----------------------------------------------------------------------------
 //
 
-void WSMANAPI WSManReceiveShellOutput(
-
+WSMAN_EXPORT void WSMANAPI WSManReceiveShellOutput(
     WSMAN_SHELL_HANDLE shell,
     WSMAN_COMMAND_HANDLE command,
     uint32_t flags,
@@ -902,8 +906,7 @@ void WSMANAPI WSManReceiveShellOutput(
 //  WSManSendShellInput API - rsp:Send
 // -----------------------------------------------------------------------------
 //
-void WSMANAPI WSManSendShellInput(
-
+WSMAN_EXPORT void WSMANAPI WSManSendShellInput(
     WSMAN_SHELL_HANDLE shell,
     WSMAN_COMMAND_HANDLE command,
     uint32_t flags,
@@ -927,7 +930,7 @@ void WSMANAPI WSManSendShellInput(
 //  is called with WSMAN_FLAG_CALLBACK_END_OF_OPERATION flag as result of this operation
 // -----------------------------------------------------------------------------
 //
-void WSMANAPI WSManCloseCommand(
+WSMAN_EXPORT void WSMANAPI WSManCloseCommand(
     WSMAN_COMMAND_HANDLE commandHandle,
     uint32_t flags,
     WSMAN_SHELL_ASYNC *async
@@ -945,7 +948,7 @@ void WSMANAPI WSManCloseCommand(
 //  WSMAN_FLAG_CALLBACK_END_OF_OPERATION flag as result of this operation
 // -----------------------------------------------------------------------------
 //
-void WSMANAPI WSManCloseShell(
+WSMAN_EXPORT void WSMANAPI WSManCloseShell(
     WSMAN_SHELL_HANDLE shellHandle,
     uint32_t flags,
     WSMAN_SHELL_ASYNC *async
@@ -957,7 +960,7 @@ void WSMANAPI WSManCloseShell(
 // WSManCreateShellEx API - wxf:Create with specific shell Id.
 // -----------------------------------------------------------------------------
 //
-void WSMANAPI WSManCreateShellEx(
+WSMAN_EXPORT void WSMANAPI WSManCreateShellEx(
     WSMAN_SESSION_HANDLE session,
     uint32_t flags,
     const WCHAR* resourceUri,           // shell resource URI
@@ -974,8 +977,7 @@ void WSMANAPI WSManCreateShellEx(
 // WSManRunShellCommandEx API - rsp:Command with specific command Id.
 // -----------------------------------------------------------------------------
 //
-void WSMANAPI WSManRunShellCommandEx(
-
+WSMAN_EXPORT void WSMANAPI WSManRunShellCommandEx(
     WSMAN_SHELL_HANDLE shell,
     uint32_t flags,
     const WCHAR* commandId,
@@ -991,7 +993,7 @@ void WSMANAPI WSManRunShellCommandEx(
 // WSManDisconnectShell API - rsp:Disconnect
 // -----------------------------------------------------------------------------
 //
-void WSMANAPI WSManDisconnectShell(
+WSMAN_EXPORT void WSMANAPI WSManDisconnectShell(
     WSMAN_SHELL_HANDLE shell,
     uint32_t flags,
     WSMAN_SHELL_DISCONNECT_INFO* disconnectInfo,
@@ -1003,7 +1005,7 @@ void WSMANAPI WSManDisconnectShell(
 // WSManReconnectShell API - rsp:Disconnect
 // -----------------------------------------------------------------------------
 //
-void WSMANAPI WSManReconnectShell(
+WSMAN_EXPORT void WSMANAPI WSManReconnectShell(
     WSMAN_SHELL_HANDLE shell,
     uint32_t flags,
     WSMAN_SHELL_ASYNC *async
@@ -1017,7 +1019,7 @@ void WSMANAPI WSManReconnectShell(
 // WSManRunShellCommand is used to report the completion of this operation
 // -----------------------------------------------------------------------------
 //
-void WSMANAPI WSManReconnectShellCommand(
+WSMAN_EXPORT void WSMANAPI WSManReconnectShellCommand(
     WSMAN_COMMAND_HANDLE commandHandle,
     uint32_t flags,
     WSMAN_SHELL_ASYNC *async
@@ -1028,7 +1030,7 @@ void WSMANAPI WSManReconnectShellCommand(
 // WSManConnectShell API - rsp:Connect
 // -----------------------------------------------------------------------------
 //
-void WSMANAPI WSManConnectShell(
+WSMAN_EXPORT void WSMANAPI WSManConnectShell(
     WSMAN_SESSION_HANDLE session,
     uint32_t flags,
     const WCHAR* resourceUri,
@@ -1044,7 +1046,7 @@ void WSMANAPI WSManConnectShell(
 // WSManConnectShellCommand API - rsp:Connect
 // -----------------------------------------------------------------------------
 //
-void WSMANAPI WSManConnectShellCommand(
+WSMAN_EXPORT void WSMANAPI WSManConnectShellCommand(
     WSMAN_SHELL_HANDLE shell,
     uint32_t flags,
     const WCHAR* commandID,  //command Identifier
