@@ -1,6 +1,16 @@
 
 #include "WSMan.h"
 
+#include <string.h>
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 typedef uint32_t(WSMANAPI* fnWSManInitialize)(uint32_t flags, WSMAN_API_HANDLE* apiHandle);
 
 typedef uint32_t(WSMANAPI* fnWSManDeinitialize)(WSMAN_API_HANDLE apiHandle, uint32_t flags);
@@ -105,15 +115,36 @@ typedef struct
 
 static WSManDll g_WSManDll = { 0 };
 
+#ifndef _WIN32
+#include <dlfcn.h>
+
+static HMODULE LoadLibraryA(const char* filename)
+{
+	return (HMODULE) dlopen(filename, RTLD_LOCAL | RTLD_LAZY);
+}
+
+static void* GetProcAddress(HMODULE hModule, const char* procName)
+{
+	return dlsym(hModule, procName);
+}
+
+static BOOL FreeLibrary(HMODULE hModule)
+{
+	return (dlclose(hModule) == 0) ? TRUE : FALSE;
+}
+#endif
+
 bool WSManDll_Init()
 {
     HMODULE hModule;
     char filename[1024];
     WSManDll* dll = &g_WSManDll;
 
-    ZeroMemory(dll, sizeof(WSManDll));
+    memset(dll, 0, sizeof(WSManDll));
 
+#ifdef _WIN32
     ExpandEnvironmentStringsA("%SystemRoot%\\System32\\WsmSvc.dll", filename, sizeof(filename));
+#endif
 
     hModule = LoadLibraryA(filename);
 
@@ -155,7 +186,7 @@ void WSManDll_Uninit()
         dll->hModule = NULL;
     }
 
-    ZeroMemory(dll, sizeof(WSManDll));
+    memset(dll, 0, sizeof(WSManDll));
 }
 
 uint32_t WSManInitialize(uint32_t flags, WSMAN_API_HANDLE* apiHandle)
@@ -315,6 +346,7 @@ void WSManConnectShellCommand(WSMAN_SHELL_HANDLE shell,
     g_WSManDll.WSManConnectShellCommand(shell, flags, commandId, options, connectXml, async, command);
 }
 
+#ifdef _WIN32
 BOOL WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID reserved)
 {
     switch (dwReason)
@@ -337,3 +369,4 @@ BOOL WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID reserved)
 
     return TRUE;
 }
+#endif
