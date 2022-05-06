@@ -1,4 +1,7 @@
 
+#ifndef WSMAN_API_H
+#define WSMAN_API_H
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -6,15 +9,20 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#ifndef _WSMAN_API_H_
-#define _WSMAN_API_H_
-
 #ifndef WCHAR
 #define WCHAR uint16_t
 #endif
 
 #ifndef BOOL
 #define BOOL unsigned char
+#endif
+
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
 #endif
 
 #ifdef _WIN32
@@ -32,6 +40,8 @@
 #endif
 
 #define PAL_T(_x) _x
+
+#define WSMAN_MAX_PATH 1024
 
 /* Error codes needed for compatibility with Windows WinRM */
 #define ERROR_WSMAN_SERVICE_STREAM_DISCONNECTED 0x803381DE
@@ -1295,4 +1305,4 @@ typedef uint32_t (WSMANCALL *InitPluginWkrPtrsFuncPtr)(PwrshPluginWkr_Ptrs* wkrP
 
 
 
-#endif /* _WSMAN_API_H_ */
+#endif /* WSMAN_API_H */
