@@ -4,6 +4,7 @@
 #endif
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #ifndef _WSMAN_API_H_
 #define _WSMAN_API_H_
@@ -38,6 +39,10 @@
 
 #ifndef ERROR_INSUFFICIENT_BUFFER
 #define ERROR_INSUFFICIENT_BUFFER 122
+#endif
+
+#ifndef _WIN32
+typedef void* HMODULE;
 #endif
 
 /* NOTE: All strings need to be UTF-16. */
@@ -154,9 +159,7 @@ enum WSManAuthenticationFlags
     WSMAN_FLAG_AUTH_NEGOTIATE            = 0x4,     //Use negotiate authentication for a remote operation (may use kerberos or ntlm)
     WSMAN_FLAG_AUTH_BASIC                = 0x8,     //Use basic authentication for a remote operation
     WSMAN_FLAG_AUTH_KERBEROS             = 0x10,    //Use kerberos authentication for a remote operation
-#if (WINVER >= 0x600)
     WSMAN_FLAG_AUTH_CREDSSP              = 0x80,    //Use CredSSP authentication for a remote operation
-#endif
     WSMAN_FLAG_AUTH_CLIENT_CERTIFICATE   = 0x20     //Use client certificate authentication for a remote operation
 };
 
@@ -1034,7 +1037,7 @@ WSMAN_EXPORT void WSMANAPI WSManConnectShell(
     WSMAN_SESSION_HANDLE session,
     uint32_t flags,
     const WCHAR* resourceUri,
-    const WCHAR* shellID,           // shell Identifier
+    const WCHAR* shellId,           // shell Identifier
     WSMAN_OPTION_SET *options,
     WSMAN_DATA *connectXml,                     // open content for connect shell
     WSMAN_SHELL_ASYNC *async,
@@ -1049,7 +1052,7 @@ WSMAN_EXPORT void WSMANAPI WSManConnectShell(
 WSMAN_EXPORT void WSMANAPI WSManConnectShellCommand(
     WSMAN_SHELL_HANDLE shell,
     uint32_t flags,
-    const WCHAR* commandID,  //command Identifier
+    const WCHAR* commandId,  //command Identifier
     WSMAN_OPTION_SET *options,
     WSMAN_DATA *connectXml,                // open content for connect command
     WSMAN_SHELL_ASYNC *async,

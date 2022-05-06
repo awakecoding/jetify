@@ -6,3 +6,5 @@ project(WSMan C)
 add_library(wsman SHARED
     WSMan.c
     WSMan.h)
+
+set_target_properties(wsman PROPERTIES OUTPUT_NAME "WsmSvc")
