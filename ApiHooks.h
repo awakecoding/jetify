@@ -7,6 +7,9 @@
 extern "C" {
 #endif
 
+uint32_t WSMan_AttachHooks();
+uint32_t WSMan_DetachHooks();
+
 #ifdef __cplusplus
 }
 #endif

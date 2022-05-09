@@ -43,6 +43,8 @@ set(WSMAN_SOURCES
     Environment.h
     Logger.c
     Logger.h
+    Utils.c
+    Utils.h
     WSMan.c
     WSMan.h)
 
@@ -59,4 +61,5 @@ set_target_properties(wsman PROPERTIES OUTPUT_NAME "WsmSvc")
 
 if(WIN32)
     target_link_libraries(wsman detours)
+    target_link_libraries(wsman winhttp.lib)
 endif()

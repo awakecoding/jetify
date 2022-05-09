@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "Logger.h"
+#include "ApiHooks.h"
 
 typedef uint32_t(WSMANAPI* fnWSManInitialize)(uint32_t flags, WSMAN_API_HANDLE* apiHandle);
 
@@ -170,6 +171,10 @@ bool WSManDll_Init()
 
     WSMan_LogOpen();
 
+#ifdef _WIN32
+    WSMan_AttachHooks();
+#endif
+
     return true;
 }
 
@@ -183,6 +188,10 @@ void WSManDll_Uninit()
     }
 
     memset(dll, 0, sizeof(WSManDll));
+
+#ifdef _WIN32
+    WSMan_DetachHooks();
+#endif
 
     WSMan_LogClose();
 }
@@ -365,8 +374,14 @@ void WSManConnectShellCommand(WSMAN_SHELL_HANDLE shell,
 }
 
 #ifdef _WIN32
+#include <detours.h>
+
 BOOL WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID reserved)
 {
+    if (DetourIsHelperProcess()) {
+        return TRUE;
+    }
+
     switch (dwReason)
     {
         case DLL_PROCESS_ATTACH:
