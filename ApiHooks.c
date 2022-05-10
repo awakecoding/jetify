@@ -2,6 +2,7 @@
 #include "ApiHooks.h"
 
 #include "Logger.h"
+#include "Environment.h"
 #include "Utils.h"
 
 #include <winhttp.h>
@@ -17,8 +18,6 @@
 #define WSMAN_GETPROCADDRESS(_funcPtr, _funcType, _hModule, _funcName) \
 	_funcPtr = ( _funcType ) GetProcAddress(_hModule, _funcName);
 
-static bool g_InjectConfigTest = false;
-
 HINTERNET(WINAPI * Real_WinHttpOpen)(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszProxyW, LPCWSTR pszProxyBypassW, DWORD dwFlags) = WinHttpOpen;
 
 HINTERNET Hook_WinHttpOpen(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszProxyW, LPCWSTR pszProxyBypassW, DWORD dwFlags)
@@ -26,13 +25,29 @@ HINTERNET Hook_WinHttpOpen(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszPro
     HINTERNET hInternet;
     char* pszAgentA = NULL;
     char* pszProxyA = NULL;
+    WCHAR* _pszProxyW = NULL;
     char* pszProxyBypassA = NULL;
+    WCHAR* _pszProxyBypassW = NULL;
 
-    if (g_InjectConfigTest) {
-        dwAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
-        pszProxyW = L"IT-HELP-GW.ad.it-help.ninja:808";
+    if (pszAgentW && !wcscmp(pszAgentW, L"Microsoft WinRM Client")) {
+        char* pszProxyEnvA = WSMan_GetEnv("WINRM_PROXY");
+        char* pszProxyBypassEnvA = WSMan_GetEnv("WINRM_PROXY_BYPASS");
+
+        if (pszProxyEnvA) {
+            dwAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
+            WSMan_ConvertToUnicode(CP_UTF8, 0, pszProxyEnvA, -1, &_pszProxyW, 0);
+            pszProxyW = _pszProxyW;
+
+            if (pszProxyBypassEnvA) {
+                WSMan_ConvertToUnicode(CP_UTF8, 0, pszProxyBypassEnvA, -1, &_pszProxyBypassW, 0);
+                pszProxyBypassW = _pszProxyBypassW;
+            }
+        }
+
+        free(pszProxyEnvA);
+        free(pszProxyBypassEnvA);
     }
-    
+
     if (pszAgentW)
         WSMan_ConvertFromUnicode(CP_UTF8, 0, pszAgentW, -1, &pszAgentA, 0, NULL, NULL);
 
@@ -55,8 +70,14 @@ HINTERNET Hook_WinHttpOpen(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszPro
     if (pszProxyA)
         free(pszProxyA);
 
+    if (_pszProxyW)
+        free(_pszProxyW);
+
     if (pszProxyBypassA)
         free(pszProxyBypassA);
+
+    if (_pszProxyBypassW)
+        free(_pszProxyBypassW);
 
     return hInternet;
 }
@@ -124,13 +145,6 @@ BOOL Hook_WinHttpSendRequest(HINTERNET hRequest, LPCWSTR lpszHeaders, DWORD dwHe
 
     WSMan_LogPrint(DEBUG, "WinHttpSendRequest(hRequest: %p)",
         hRequest);
-
-    if (g_InjectConfigTest) {
-        WCHAR* pszUserNameW = L"anonymous";
-        WCHAR* pszPasswordW = L"none";
-        WinHttpSetCredentials(hRequest, WINHTTP_AUTH_TARGET_PROXY,
-            WINHTTP_AUTH_SCHEME_BASIC, pszUserNameW, pszPasswordW, NULL);
-    }
 
     success = Real_WinHttpSendRequest(hRequest, lpszHeaders, dwHeadersLength,
         lpOptional, dwOptionalLength, dwTotalLength, dwContext);
