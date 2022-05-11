@@ -1,40 +1,40 @@
 
 #include "Logger.h"
 
+#include "Utils.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "Environment.h"
 
 static bool g_LogInitialized = false;
 
 static FILE* g_LogFile = NULL;
-static bool g_LogEnabled = true;
-static char g_LogFilePath[WSMAN_MAX_PATH] = { 0 };
+static bool g_LogEnabled = false;
+static char g_LogFilePath[JETIFY_MAX_PATH] = { 0 };
 
-static uint32_t g_LogLevel = WSMAN_LOG_DEBUG;
+static uint32_t g_LogLevel = JETIFY_LOG_DEBUG;
 
-#define WSMAN_LOG_MAX_LINE    8192
+#define JETIFY_LOG_MAX_LINE    8192
 
-bool WSMan_IsLogLevelActive(uint32_t logLevel)
+bool Jetify_IsLogLevelActive(uint32_t logLevel)
 {
     if (!g_LogEnabled)
         return false;
 
-    if (g_LogLevel == WSMAN_LOG_OFF)
+    if (g_LogLevel == JETIFY_LOG_OFF)
         return false;
 
     return logLevel >= g_LogLevel;
 }
 
-bool WSMan_LogVA(const char* format, va_list args)
+bool Jetify_LogVA(const char* format, va_list args)
 {
     if (!g_LogFile)
         return true;
 
-    char message[WSMAN_LOG_MAX_LINE];
-    vsnprintf_s(message, WSMAN_LOG_MAX_LINE - 1, _TRUNCATE, format, args);
-    strcat_s(message, WSMAN_LOG_MAX_LINE - 1, "\n");
+    char message[JETIFY_LOG_MAX_LINE];
+    vsnprintf_s(message, JETIFY_LOG_MAX_LINE - 1, _TRUNCATE, format, args);
+    strcat_s(message, JETIFY_LOG_MAX_LINE - 1, "\n");
 
     if (g_LogFile) {
         fprintf(g_LogFile, message);
@@ -44,17 +44,17 @@ bool WSMan_LogVA(const char* format, va_list args)
     return true;
 }
 
-bool WSMan_Log(const char* format, ...)
+bool Jetify_Log(const char* format, ...)
 {
 	bool status;
 	va_list args;
 	va_start(args, format);
-	status = WSMan_LogVA(format, args);
+	status = Jetify_LogVA(format, args);
 	va_end(args);
 	return status;
 }
 
-void WSMan_LogHexDump(const uint8_t* data, size_t size)
+void Jetify_LogHexDump(const uint8_t* data, size_t size)
 {
     int i, ln, hn;
 	const uint8_t* p = data;
@@ -105,59 +105,59 @@ void WSMan_LogHexDump(const uint8_t* data, size_t size)
     }
 }
 
-void WSMan_LogEnvInit()
+void Jetify_LogEnvInit()
 {
     char* envvar;
 
     if (g_LogInitialized)
         return;
 
-    bool logEnabled = WSMan_GetEnvBool("WSMAN_LOG_LEVEL", false);
-
-    if (logEnabled) {
-        // only set if true to avoid overriding current value
-        WSMan_SetLogEnabled(true);
-    }
-
-    envvar = WSMan_GetEnv("WSMAN_LOG_LEVEL");
+    envvar = Jetify_GetEnv("JETIFY_LOG_LEVEL");
 
     if (envvar) {
         int ival = atoi(envvar);
 
+        Jetify_SetLogEnabled(true);
+
         if ((ival >= 0) && (ival <= 6)) {
-            WSMan_SetLogLevel((uint32_t) ival);
+            Jetify_SetLogLevel((uint32_t) ival);
+
+            if (ival == JETIFY_LOG_OFF) {
+                Jetify_SetLogEnabled(false);
+            }
         }
         else {
             if (!strcmp(envvar, "TRACE")) {
-                WSMan_SetLogLevel(WSMAN_LOG_TRACE);
+                Jetify_SetLogLevel(JETIFY_LOG_TRACE);
             }
             else if (!strcmp(envvar, "DEBUG")) {
-                WSMan_SetLogLevel(WSMAN_LOG_DEBUG);
+                Jetify_SetLogLevel(JETIFY_LOG_DEBUG);
             }
             else if (!strcmp(envvar, "INFO")) {
-                WSMan_SetLogLevel(WSMAN_LOG_INFO);
+                Jetify_SetLogLevel(JETIFY_LOG_INFO);
             }
             else if (!strcmp(envvar, "WARN")) {
-                WSMan_SetLogLevel(WSMAN_LOG_WARN);
+                Jetify_SetLogLevel(JETIFY_LOG_WARN);
             }
             else if (!strcmp(envvar, "ERROR")) {
-                WSMan_SetLogLevel(WSMAN_LOG_ERROR);
+                Jetify_SetLogLevel(JETIFY_LOG_ERROR);
             }
             else if (!strcmp(envvar, "FATAL")) {
-                WSMan_SetLogLevel(WSMAN_LOG_FATAL);
+                Jetify_SetLogLevel(JETIFY_LOG_FATAL);
             }
             else if (!strcmp(envvar, "OFF")) {
-                WSMan_SetLogLevel(WSMAN_LOG_OFF);
+                Jetify_SetLogLevel(JETIFY_LOG_OFF);
+                Jetify_SetLogEnabled(false);
             }
         }
     }
 
     free(envvar);
 
-    envvar = WSMan_GetEnv("WSMAN_LOG_FILE_PATH");
+    envvar = Jetify_GetEnv("JETIFY_LOG_FILE_PATH");
 
     if (envvar) {
-        WSMan_SetLogFilePath(envvar);
+        Jetify_SetLogFilePath(envvar);
     }
 
     free(envvar);
@@ -165,21 +165,21 @@ void WSMan_LogEnvInit()
     g_LogInitialized = true;
 }
 
-void WSMan_LogOpen()
+void Jetify_LogOpen()
 {
-    WSMan_LogEnvInit();
+    Jetify_LogEnvInit();
 
     if (!g_LogEnabled)
         return;
 
     if (g_LogFilePath[0] == '\0') {
-        ExpandEnvironmentStringsA("%TEMP%\\WSMan.log", g_LogFilePath, WSMAN_MAX_PATH);
+        ExpandEnvironmentStringsA("%TEMP%\\Jetify.log", g_LogFilePath, JETIFY_MAX_PATH);
     }
 
     g_LogFile = fopen(g_LogFilePath, "wb");
 }
 
-void WSMan_LogClose()
+void Jetify_LogClose()
 {
     if (g_LogFile) {
         fclose(g_LogFile);
@@ -187,17 +187,17 @@ void WSMan_LogClose()
     }
 }
 
-void WSMan_SetLogEnabled(bool logEnabled)
+void Jetify_SetLogEnabled(bool logEnabled)
 {
     g_LogEnabled = logEnabled;
 }
 
-void WSMan_SetLogLevel(uint32_t logLevel)
+void Jetify_SetLogLevel(uint32_t logLevel)
 {
     g_LogLevel = logLevel;
 }
 
-void WSMan_SetLogFilePath(const char* logFilePath)
+void Jetify_SetLogFilePath(const char* logFilePath)
 {
-    strcpy_s(g_LogFilePath, WSMAN_MAX_PATH, logFilePath);
+    strcpy_s(g_LogFilePath, JETIFY_MAX_PATH, logFilePath);
 }

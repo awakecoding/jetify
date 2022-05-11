@@ -2,20 +2,19 @@
 #include "ApiHooks.h"
 
 #include "Logger.h"
-#include "Environment.h"
 #include "Utils.h"
 
 #include <winhttp.h>
 
 #include <detours.h>
 
-#define WSMAN_DETOUR_ATTACH(_realFn, _hookFn) \
+#define JETIFY_DETOUR_ATTACH(_realFn, _hookFn) \
 	if (_realFn) DetourAttach((PVOID*)(&_realFn), _hookFn);
 
-#define WSMAN_DETOUR_DETACH(_realFn, _hookFn) \
+#define JETIFY_DETOUR_DETACH(_realFn, _hookFn) \
 	if (_realFn) DetourDetach((PVOID*)(&_realFn), _hookFn);
 
-#define WSMAN_GETPROCADDRESS(_funcPtr, _funcType, _hModule, _funcName) \
+#define JETIFY_GETPROCADDRESS(_funcPtr, _funcType, _hModule, _funcName) \
 	_funcPtr = ( _funcType ) GetProcAddress(_hModule, _funcName);
 
 HINTERNET(WINAPI * Real_WinHttpOpen)(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszProxyW, LPCWSTR pszProxyBypassW, DWORD dwFlags) = WinHttpOpen;
@@ -30,16 +29,16 @@ HINTERNET Hook_WinHttpOpen(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszPro
     WCHAR* _pszProxyBypassW = NULL;
 
     if (pszAgentW && !wcscmp(pszAgentW, L"Microsoft WinRM Client")) {
-        char* pszProxyEnvA = WSMan_GetEnv("WINRM_PROXY");
-        char* pszProxyBypassEnvA = WSMan_GetEnv("WINRM_PROXY_BYPASS");
+        char* pszProxyEnvA = Jetify_GetEnv("WINRM_PROXY");
+        char* pszProxyBypassEnvA = Jetify_GetEnv("WINRM_PROXY_BYPASS");
 
         if (pszProxyEnvA) {
             dwAccessType = WINHTTP_ACCESS_TYPE_NAMED_PROXY;
-            WSMan_ConvertToUnicode(CP_UTF8, 0, pszProxyEnvA, -1, &_pszProxyW, 0);
+            Jetify_ConvertToUnicode(CP_UTF8, 0, pszProxyEnvA, -1, &_pszProxyW, 0);
             pszProxyW = _pszProxyW;
 
             if (pszProxyBypassEnvA) {
-                WSMan_ConvertToUnicode(CP_UTF8, 0, pszProxyBypassEnvA, -1, &_pszProxyBypassW, 0);
+                Jetify_ConvertToUnicode(CP_UTF8, 0, pszProxyBypassEnvA, -1, &_pszProxyBypassW, 0);
                 pszProxyBypassW = _pszProxyBypassW;
             }
         }
@@ -49,17 +48,17 @@ HINTERNET Hook_WinHttpOpen(LPCWSTR pszAgentW, DWORD dwAccessType, LPCWSTR pszPro
     }
 
     if (pszAgentW)
-        WSMan_ConvertFromUnicode(CP_UTF8, 0, pszAgentW, -1, &pszAgentA, 0, NULL, NULL);
+        Jetify_ConvertFromUnicode(CP_UTF8, 0, pszAgentW, -1, &pszAgentA, 0, NULL, NULL);
 
     if (pszProxyW)
-        WSMan_ConvertFromUnicode(CP_UTF8, 0, pszProxyW, -1, &pszProxyA, 0, NULL, NULL);
+        Jetify_ConvertFromUnicode(CP_UTF8, 0, pszProxyW, -1, &pszProxyA, 0, NULL, NULL);
 
     if (pszProxyBypassW)
-        WSMan_ConvertFromUnicode(CP_UTF8, 0, pszProxyBypassW, -1, &pszProxyBypassA, 0, NULL, NULL);
+        Jetify_ConvertFromUnicode(CP_UTF8, 0, pszProxyBypassW, -1, &pszProxyBypassA, 0, NULL, NULL);
 
-    WSMan_LogPrint(DEBUG, "WinHttpOpen(dwAccessType: %d, dwFlags: 0x%08X)", dwAccessType, dwFlags);
-    WSMan_LogPrint(DEBUG, "pszAgent: \"%s\"", pszAgentA ? pszAgentA : "");
-    WSMan_LogPrint(DEBUG, "pszProxy: \"%s\" pszProxyBypass: \"%s\"",
+    Jetify_LogPrint(DEBUG, "WinHttpOpen(dwAccessType: %d, dwFlags: 0x%08X)", dwAccessType, dwFlags);
+    Jetify_LogPrint(DEBUG, "pszAgent: \"%s\"", pszAgentA ? pszAgentA : "");
+    Jetify_LogPrint(DEBUG, "pszProxy: \"%s\" pszProxyBypass: \"%s\"",
         pszProxyA ? pszProxyA : "", pszProxyBypassA ? pszProxyBypassA : "");
 
     hInternet = Real_WinHttpOpen(pszAgentW, dwAccessType, pszProxyW, pszProxyBypassW, dwFlags);
@@ -90,9 +89,9 @@ HINTERNET Hook_WinHttpConnect(HINTERNET hSession, LPCWSTR pszServerNameW, INTERN
     char* pszServerNameA = NULL;
 
     if (pszServerNameW)
-        WSMan_ConvertFromUnicode(CP_UTF8, 0, pszServerNameW, -1, &pszServerNameA, 0, NULL, NULL);
+        Jetify_ConvertFromUnicode(CP_UTF8, 0, pszServerNameW, -1, &pszServerNameA, 0, NULL, NULL);
 
-    WSMan_LogPrint(DEBUG, "WinHttpConnect(hSession: %p, pszServerName: %s nServerPort: %d)",
+    Jetify_LogPrint(DEBUG, "WinHttpConnect(hSession: %p, pszServerName: %s nServerPort: %d)",
         hSession, pszServerNameA ? pszServerNameA : "", (int)nServerPort);
     
     hInternet = Real_WinHttpConnect(hSession, pszServerNameW, nServerPort, dwReserved);
@@ -109,7 +108,7 @@ BOOL Hook_WinHttpSetOption(HINTERNET hInternet, DWORD dwOption, LPVOID lpBuffer,
 {
     BOOL success;
     
-    WSMan_LogPrint(DEBUG, "WinHttpSetOption(hInternet: %p, dwOption: %d, dwBufferLength: %d)",
+    Jetify_LogPrint(DEBUG, "WinHttpSetOption(hInternet: %p, dwOption: %d, dwBufferLength: %d)",
         hInternet, dwOption, dwBufferLength);
     
     success = Real_WinHttpSetOption(hInternet, dwOption, lpBuffer, dwBufferLength);
@@ -127,7 +126,7 @@ HINTERNET Hook_WinHttpOpenRequest(HINTERNET hConnect, LPCWSTR pszVerbW,
 {
     HINTERNET hRequest;
 
-    WSMan_LogPrint(DEBUG, "WinHttpOpenRequest(hConnect: %p)",
+    Jetify_LogPrint(DEBUG, "WinHttpOpenRequest(hConnect: %p)",
         hConnect);
 
     hRequest = Real_WinHttpOpenRequest(hConnect, pszVerbW, pszObjectNameW, pszVersionW, pszReferrerW, ppszAcceptTypesW, dwFlags);
@@ -143,7 +142,7 @@ BOOL Hook_WinHttpSendRequest(HINTERNET hRequest, LPCWSTR lpszHeaders, DWORD dwHe
 {
     BOOL success;
 
-    WSMan_LogPrint(DEBUG, "WinHttpSendRequest(hRequest: %p)",
+    Jetify_LogPrint(DEBUG, "WinHttpSendRequest(hRequest: %p)",
         hRequest);
 
     success = Real_WinHttpSendRequest(hRequest, lpszHeaders, dwHeadersLength,
@@ -157,36 +156,36 @@ BOOL(WINAPI* Real_WinHttpCloseHandle)(HINTERNET hInternet) = WinHttpCloseHandle;
 BOOL Hook_WinHttpCloseHandle(HINTERNET hInternet)
 {
     BOOL success;
-    WSMan_LogPrint(DEBUG, "WinHttpCloseHandle(hInternet: %p)", hInternet);
+    Jetify_LogPrint(DEBUG, "WinHttpCloseHandle(hInternet: %p)", hInternet);
     success = Real_WinHttpCloseHandle(hInternet);
     return success;
 }
 
-uint32_t WSMan_AttachHooks()
+uint32_t Jetify_AttachHooks()
 {
     LONG error;
     DetourRestoreAfterWith();
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    WSMAN_DETOUR_ATTACH(Real_WinHttpOpen, Hook_WinHttpOpen);
-    WSMAN_DETOUR_ATTACH(Real_WinHttpConnect, Hook_WinHttpConnect);
-    WSMAN_DETOUR_ATTACH(Real_WinHttpSetOption, Hook_WinHttpSetOption);
-    WSMAN_DETOUR_ATTACH(Real_WinHttpOpenRequest, Hook_WinHttpOpenRequest);
-    WSMAN_DETOUR_ATTACH(Real_WinHttpCloseHandle, Hook_WinHttpCloseHandle);
+    JETIFY_DETOUR_ATTACH(Real_WinHttpOpen, Hook_WinHttpOpen);
+    JETIFY_DETOUR_ATTACH(Real_WinHttpConnect, Hook_WinHttpConnect);
+    JETIFY_DETOUR_ATTACH(Real_WinHttpSetOption, Hook_WinHttpSetOption);
+    JETIFY_DETOUR_ATTACH(Real_WinHttpOpenRequest, Hook_WinHttpOpenRequest);
+    JETIFY_DETOUR_ATTACH(Real_WinHttpCloseHandle, Hook_WinHttpCloseHandle);
     error = DetourTransactionCommit();
     return (uint32_t) error;
 }
 
-uint32_t WSMan_DetachHooks()
+uint32_t Jetify_DetachHooks()
 {
     LONG error;
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
-    WSMAN_DETOUR_DETACH(Real_WinHttpOpen, Hook_WinHttpOpen);
-    WSMAN_DETOUR_DETACH(Real_WinHttpConnect, Hook_WinHttpConnect);
-    WSMAN_DETOUR_DETACH(Real_WinHttpSetOption, Hook_WinHttpSetOption);
-    WSMAN_DETOUR_DETACH(Real_WinHttpOpenRequest, Hook_WinHttpOpenRequest);
-    WSMAN_DETOUR_DETACH(Real_WinHttpCloseHandle, Hook_WinHttpCloseHandle);
+    JETIFY_DETOUR_DETACH(Real_WinHttpOpen, Hook_WinHttpOpen);
+    JETIFY_DETOUR_DETACH(Real_WinHttpConnect, Hook_WinHttpConnect);
+    JETIFY_DETOUR_DETACH(Real_WinHttpSetOption, Hook_WinHttpSetOption);
+    JETIFY_DETOUR_DETACH(Real_WinHttpOpenRequest, Hook_WinHttpOpenRequest);
+    JETIFY_DETOUR_DETACH(Real_WinHttpCloseHandle, Hook_WinHttpCloseHandle);
     error = DetourTransactionCommit();
     return (uint32_t)error;
 }

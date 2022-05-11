@@ -1,7 +1,7 @@
 
 cmake_minimum_required(VERSION 3.8)
 
-project(WSMan C)
+project(Jetify C)
 
 if(WIN32)
 	set(C_FLAGS "")
@@ -38,28 +38,26 @@ if(WIN32)
         IMPORTED_LOCATION_DEBUG "${DETOURS_ROOT_DIR}/lib/${MSVC_PLATFORM_TARGET}/Debug/detours.lib")
 endif()
 
-set(WSMAN_SOURCES
-    Environment.c
-    Environment.h
+set(JETIFY_SOURCES
     Logger.c
     Logger.h
     Utils.c
     Utils.h
     WSMan.c
-    WSMan.h)
+    WSMan.h
+    Jetify.c
+    Jetify.h)
 
 if(WIN32)
-    list(APPEND WSMAN_SOURCES
+    list(APPEND JETIFY_SOURCES
         ApiHooks.c
         ApiHooks.h)
 endif()
 
-add_library(wsman SHARED
-    ${WSMAN_SOURCES})
-
-set_target_properties(wsman PROPERTIES OUTPUT_NAME "WsmSvc")
+add_library(jetify SHARED
+    ${JETIFY_SOURCES})
 
 if(WIN32)
-    target_link_libraries(wsman detours)
-    target_link_libraries(wsman winhttp.lib)
+    target_link_libraries(jetify detours)
+    target_link_libraries(jetify winhttp.lib)
 endif()

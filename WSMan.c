@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "Logger.h"
-#include "ApiHooks.h"
+#include "Utils.h"
 
 typedef uint32_t(WSMANAPI* fnWSManInitialize)(uint32_t flags, WSMAN_API_HANDLE* apiHandle);
 
@@ -129,6 +129,27 @@ static BOOL FreeLibrary(HMODULE hModule)
 }
 #endif
 
+EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+
+bool WSManDll_ShouldInit()
+{
+    char libraryFilePath[JETIFY_MAX_PATH] = { 0 };
+    GetModuleFileNameA((HINSTANCE)&__ImageBase, libraryFilePath, JETIFY_MAX_PATH);
+
+    Jetify_LogPrint(DEBUG, "WSMan_ShouldInit: %s", libraryFilePath);
+
+    const char* filename = Jetify_FileBase(libraryFilePath);
+
+    if (!filename)
+        return false;
+
+    if (Jetify_StringIEquals(filename, "WsmSvc.dll")) {
+        return true;
+    }
+
+    return false;
+}
+
 bool WSManDll_Init()
 {
     HMODULE hModule;
@@ -136,6 +157,10 @@ bool WSManDll_Init()
     WSManDll* dll = &g_WSManDll;
 
     memset(dll, 0, sizeof(WSManDll));
+
+    if (WSManDll_ShouldInit()) {
+        return true;
+    }
 
 #ifdef _WIN32
     ExpandEnvironmentStringsA("%SystemRoot%\\System32\\WsmSvc.dll", filename, sizeof(filename));
@@ -169,12 +194,6 @@ bool WSManDll_Init()
     dll->WSManConnectShell = (fnWSManConnectShell)GetProcAddress(hModule, "WSManConnectShell");
     dll->WSManConnectShellCommand = (fnWSManConnectShellCommand)GetProcAddress(hModule, "WSManConnectShellCommand");
 
-    WSMan_LogOpen();
-
-#ifdef _WIN32
-    WSMan_AttachHooks();
-#endif
-
     return true;
 }
 
@@ -188,19 +207,13 @@ void WSManDll_Uninit()
     }
 
     memset(dll, 0, sizeof(WSManDll));
-
-#ifdef _WIN32
-    WSMan_DetachHooks();
-#endif
-
-    WSMan_LogClose();
 }
 
 uint32_t WSManInitialize(uint32_t flags, WSMAN_API_HANDLE* apiHandle)
 {
     uint32_t status;
     status = g_WSManDll.WSManInitialize(flags, apiHandle);
-    WSMan_LogPrint(DEBUG, "WSManInitialize");
+    Jetify_LogPrint(DEBUG, "WSManInitialize");
     return status;
 }
 
@@ -208,7 +221,7 @@ uint32_t WSManDeinitialize(WSMAN_API_HANDLE apiHandle, uint32_t flags)
 {
     uint32_t status;
     status = g_WSManDll.WSManDeinitialize(apiHandle, flags);
-    WSMan_LogPrint(DEBUG, "WSManDeinitialize");
+    Jetify_LogPrint(DEBUG, "WSManDeinitialize");
     return status;
 }
 
@@ -228,7 +241,7 @@ uint32_t WSManCreateSession(WSMAN_API_HANDLE apiHandle,
 {
     uint32_t status;
     status = g_WSManDll.WSManCreateSession(apiHandle, connection, flags, serverAuthenticationCredentials, proxyInfo, session);
-    WSMan_LogPrint(DEBUG, "WSManCreateSession");
+    Jetify_LogPrint(DEBUG, "WSManCreateSession");
     return status;
 }
 
@@ -236,7 +249,7 @@ uint32_t WSManCloseSession(WSMAN_SESSION_HANDLE session, uint32_t flags)
 {
     uint32_t status;
     status = g_WSManDll.WSManCloseSession(session, flags);
-    WSMan_LogPrint(DEBUG, "WSManCloseSession");
+    Jetify_LogPrint(DEBUG, "WSManCloseSession");
     return status;
 }
 
@@ -245,7 +258,7 @@ uint32_t WSManSetSessionOption(WSMAN_SESSION_HANDLE session,
 {
     uint32_t status;
     status = g_WSManDll.WSManSetSessionOption(session, option, data);
-    WSMan_LogPrint(DEBUG, "WSManSetSessionOption");
+    Jetify_LogPrint(DEBUG, "WSManSetSessionOption");
     return status;
 }
 
@@ -254,7 +267,7 @@ uint32_t WSManGetSessionOptionAsDword(WSMAN_SESSION_HANDLE session,
 {
     uint32_t status;
     status = g_WSManDll.WSManGetSessionOptionAsDword(session, option, value);
-    WSMan_LogPrint(DEBUG, "WSManGetSessionOptionAsDword");
+    Jetify_LogPrint(DEBUG, "WSManGetSessionOptionAsDword");
     return status;
 }
 
@@ -263,7 +276,7 @@ uint32_t WSManGetSessionOptionAsString(WSMAN_SESSION_HANDLE session,
 {
     uint32_t status;
     status = g_WSManDll.WSManGetSessionOptionAsString(session, option, stringLength, string, stringLengthUsed);
-    WSMan_LogPrint(DEBUG, "WSManGetSessionOptionAsString");
+    Jetify_LogPrint(DEBUG, "WSManGetSessionOptionAsString");
     return status;
 }
 
@@ -271,7 +284,7 @@ uint32_t WSManCloseOperation(WSMAN_OPERATION_HANDLE operationHandle, uint32_t fl
 {
     uint32_t status;
     status = g_WSManDll.WSManCloseOperation(operationHandle, flags);
-    WSMan_LogPrint(DEBUG, "WSManCloseOperation");
+    Jetify_LogPrint(DEBUG, "WSManCloseOperation");
     return status;
 }
 
@@ -280,7 +293,7 @@ void WSManSignalShell(WSMAN_SHELL_HANDLE shell,
     WSMAN_SHELL_ASYNC* async, WSMAN_OPERATION_HANDLE* signalOperation)
 {
     g_WSManDll.WSManSignalShell(shell, command, flags, code, async, signalOperation);
-    WSMan_LogPrint(DEBUG, "WSManSignalShell");
+    Jetify_LogPrint(DEBUG, "WSManSignalShell");
 }
 
 void WSManReceiveShellOutput(WSMAN_SHELL_HANDLE shell,
@@ -289,7 +302,7 @@ void WSManReceiveShellOutput(WSMAN_SHELL_HANDLE shell,
     WSMAN_OPERATION_HANDLE* receiveOperation)
 {
     g_WSManDll.WSManReceiveShellOutput(shell, command, flags, desiredStreamSet, async, receiveOperation);
-    WSMan_LogPrint(DEBUG, "WSManReceiveShellOutput");
+    Jetify_LogPrint(DEBUG, "WSManReceiveShellOutput");
 }
 
 void WSManSendShellInput(WSMAN_SHELL_HANDLE shell,
@@ -298,21 +311,21 @@ void WSManSendShellInput(WSMAN_SHELL_HANDLE shell,
     WSMAN_OPERATION_HANDLE* sendOperation)
 {
     g_WSManDll.WSManSendShellInput(shell, command, flags, streamId, streamData, endOfStream, async, sendOperation);
-    WSMan_LogPrint(DEBUG, "WSManSendShellInput");
+    Jetify_LogPrint(DEBUG, "WSManSendShellInput");
 }
 
 void WSManCloseCommand(WSMAN_COMMAND_HANDLE commandHandle,
     uint32_t flags, WSMAN_SHELL_ASYNC* async)
 {
     g_WSManDll.WSManCloseCommand(commandHandle, flags, async);
-    WSMan_LogPrint(DEBUG, "WSManCloseCommand");
+    Jetify_LogPrint(DEBUG, "WSManCloseCommand");
 }
 
 void WSManCloseShell(WSMAN_SHELL_HANDLE shellHandle,
     uint32_t flags, WSMAN_SHELL_ASYNC* async)
 {
     g_WSManDll.WSManCloseShell(shellHandle, flags, async);
-    WSMan_LogPrint(DEBUG, "WSManCloseShell");
+    Jetify_LogPrint(DEBUG, "WSManCloseShell");
 }
 
 void WSManCreateShellEx(WSMAN_SESSION_HANDLE session,
@@ -322,7 +335,7 @@ void WSManCreateShellEx(WSMAN_SESSION_HANDLE session,
     WSMAN_SHELL_ASYNC* async, WSMAN_SHELL_HANDLE* shell)
 {
     g_WSManDll.WSManCreateShellEx(session, flags, resourceUri, shellId, startupInfo, options, createXml, async, shell);
-    WSMan_LogPrint(DEBUG, "WSManCreateShellEx");
+    Jetify_LogPrint(DEBUG, "WSManCreateShellEx");
 }
 
 void WSManRunShellCommandEx(WSMAN_SHELL_HANDLE shell,
@@ -331,28 +344,28 @@ void WSManRunShellCommandEx(WSMAN_SHELL_HANDLE shell,
     WSMAN_SHELL_ASYNC* async, WSMAN_COMMAND_HANDLE* command)
 {
     g_WSManDll.WSManRunShellCommandEx(shell, flags, commandId, commandLine, args, options, async, command);
-    WSMan_LogPrint(DEBUG, "WSManRunShellCommandEx");
+    Jetify_LogPrint(DEBUG, "WSManRunShellCommandEx");
 }
 
 void WSManDisconnectShell(WSMAN_SHELL_HANDLE shell, uint32_t flags,
     WSMAN_SHELL_DISCONNECT_INFO* disconnectInfo, WSMAN_SHELL_ASYNC* async)
 {
     g_WSManDll.WSManDisconnectShell(shell, flags, disconnectInfo, async);
-    WSMan_LogPrint(DEBUG, "WSManDisconnectShell");
+    Jetify_LogPrint(DEBUG, "WSManDisconnectShell");
 }
 
 void WSManReconnectShell(WSMAN_SHELL_HANDLE shell,
     uint32_t flags, WSMAN_SHELL_ASYNC* async)
 {
     g_WSManDll.WSManReconnectShell(shell, flags, async);
-    WSMan_LogPrint(DEBUG, "WSManReconnectShell");
+    Jetify_LogPrint(DEBUG, "WSManReconnectShell");
 }
 
 void WSManReconnectShellCommand(WSMAN_COMMAND_HANDLE commandHandle,
     uint32_t flags, WSMAN_SHELL_ASYNC* async)
 {
     g_WSManDll.WSManReconnectShellCommand(commandHandle, flags, async);
-    WSMan_LogPrint(DEBUG, "WSManReconnectShellCommand");
+    Jetify_LogPrint(DEBUG, "WSManReconnectShellCommand");
 }
 
 void WSManConnectShell(WSMAN_SESSION_HANDLE session,
@@ -361,7 +374,7 @@ void WSManConnectShell(WSMAN_SESSION_HANDLE session,
     WSMAN_SHELL_ASYNC* async, WSMAN_SHELL_HANDLE* shell)
 {
     g_WSManDll.WSManConnectShell(session, flags, resourceUri, shellId, options, connectXml, async, shell);
-    WSMan_LogPrint(DEBUG, "WSManConnectShell");
+    Jetify_LogPrint(DEBUG, "WSManConnectShell");
 }
 
 void WSManConnectShellCommand(WSMAN_SHELL_HANDLE shell,
@@ -370,36 +383,5 @@ void WSManConnectShellCommand(WSMAN_SHELL_HANDLE shell,
     WSMAN_SHELL_ASYNC* async, WSMAN_COMMAND_HANDLE* command)
 {
     g_WSManDll.WSManConnectShellCommand(shell, flags, commandId, options, connectXml, async, command);
-    WSMan_LogPrint(DEBUG, "WSManConnectShellCommand");
+    Jetify_LogPrint(DEBUG, "WSManConnectShellCommand");
 }
-
-#ifdef _WIN32
-#include <detours.h>
-
-BOOL WINAPI DllMain(HMODULE hModule, DWORD dwReason, LPVOID reserved)
-{
-    if (DetourIsHelperProcess()) {
-        return TRUE;
-    }
-
-    switch (dwReason)
-    {
-        case DLL_PROCESS_ATTACH:
-            DisableThreadLibraryCalls(hModule);
-            WSManDll_Init();
-            break;
-
-        case DLL_PROCESS_DETACH:
-            WSManDll_Uninit();
-            break;
-
-        case DLL_THREAD_ATTACH:
-            break;
-
-        case DLL_THREAD_DETACH:
-            break;
-    }
-
-    return TRUE;
-}
-#endif

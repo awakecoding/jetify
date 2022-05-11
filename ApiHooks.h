@@ -1,17 +1,17 @@
-#include "WSMan.h"
+#include "Jetify.h"
 
-#ifndef WSMAN_API_HOOKS_H
-#define WSMAN_API_HOOKS_H
+#ifndef JETIFY_API_HOOKS_H
+#define JETIFY_API_HOOKS_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-uint32_t WSMan_AttachHooks();
-uint32_t WSMan_DetachHooks();
+uint32_t Jetify_AttachHooks();
+uint32_t Jetify_DetachHooks();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* WSMAN_API_HOOKS_H */
+#endif /* JETIFY_API_HOOKS_H */

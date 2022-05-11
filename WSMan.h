@@ -1,36 +1,12 @@
+#include "Jetify.h"
 
-#ifndef WSMAN_API_H
-#define WSMAN_API_H
-
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
-#include <stdint.h>
-#include <stdbool.h>
-
-#ifndef WCHAR
-#define WCHAR uint16_t
-#endif
-
-#ifndef BOOL
-#define BOOL unsigned char
-#endif
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-
-#ifndef FALSE
-#define FALSE 0
-#endif
+#ifndef JETIFY_WSMAN_H
+#define JETIFY_WSMAN_H
 
 #ifdef _WIN32
 #define WSMANAPI __stdcall
-#define WSMANCALL __stdcall
 #else
 #define WSMANAPI 
-#define WSMANCALL 
 #endif
 
 #ifdef _WIN32
@@ -40,8 +16,6 @@
 #endif
 
 #define PAL_T(_x) _x
-
-#define WSMAN_MAX_PATH 1024
 
 /* Error codes needed for compatibility with Windows WinRM */
 #define ERROR_WSMAN_SERVICE_STREAM_DISCONNECTED 0x803381DE
@@ -1118,7 +1092,7 @@ typedef struct _WSMAN_PLUGIN_REQUEST
  * information about the shell
  * ===================================================================
  */
-uint32_t WSMANCALL WSManPluginReportContext(
+uint32_t WSMANAPI WSManPluginReportContext(
     WSMAN_PLUGIN_REQUEST *requestDetails,
     uint32_t flags,
     void * context
@@ -1128,7 +1102,7 @@ uint32_t WSMANCALL WSManPluginReportContext(
 #define WSMAN_FLAG_RECEIVE_FLUSH               2
 #define WSMAN_FLAG_RECEIVE_RESULT_DATA_BOUNDARY 4
 
-uint32_t WSMANCALL WSManPluginReceiveResult(
+uint32_t WSMANAPI WSManPluginReceiveResult(
     WSMAN_PLUGIN_REQUEST *requestDetails,
     uint32_t flags,
     const WCHAR * stream,
@@ -1137,7 +1111,7 @@ uint32_t WSMANCALL WSManPluginReceiveResult(
     uint32_t exitCode
     );
 
-uint32_t WSMANCALL WSManPluginOperationComplete(
+uint32_t WSMANAPI WSManPluginOperationComplete(
     WSMAN_PLUGIN_REQUEST *requestDetails,
     uint32_t flags,
     uint32_t errorCode,
@@ -1152,24 +1126,24 @@ uint32_t WSMANCALL WSManPluginOperationComplete(
 #define WSMAN_PLUGIN_PARAMS_GET_REQUESTED_DATA_LOCALE 6 /* Returns WSMAN_DATA_TEXT */
 
 
-uint32_t WSMANCALL WSManPluginGetOperationParameters (
+uint32_t WSMANAPI WSManPluginGetOperationParameters (
     WSMAN_PLUGIN_REQUEST *requestDetails,
     uint32_t flags,
     WSMAN_DATA *data
     );
 
-uint32_t WSMANCALL WSManPluginGetConfiguration (
+uint32_t WSMANAPI WSManPluginGetConfiguration (
     void * pluginContext,
     uint32_t flags,
     WSMAN_DATA *data
 );
 
-uint32_t WSMANCALL WSManPluginReportCompletion(
+uint32_t WSMANAPI WSManPluginReportCompletion(
     void * pluginContext,
     uint32_t flags
 );
 
-uint32_t WSMANCALL WSManPluginFreeRequestDetails(WSMAN_PLUGIN_REQUEST *requestDetails);
+uint32_t WSMANAPI WSManPluginFreeRequestDetails(WSMAN_PLUGIN_REQUEST *requestDetails);
 
 #define WSMAN_PLUGIN_STARTUP_REQUEST_RECEIVED     0x0
 #define WSMAN_PLUGIN_STARTUP_AUTORESTARTED_REBOOT 0x1
@@ -1198,25 +1172,25 @@ uint32_t WSMANCALL WSManPluginFreeRequestDetails(WSMAN_PLUGIN_REQUEST *requestDe
 #define WSMAN_SIGNAL_CODE_EXIT      WSMAN_SHELL_NS PAL_T("/signal/Exit")
 
 
-void WSMANCALL WSManPluginReleaseShellContext(
+void WSMANAPI WSManPluginReleaseShellContext(
     void * shellContext
     );
 
-void WSMANCALL WSManPluginReleaseCommandContext(
+void WSMANAPI WSManPluginReleaseCommandContext(
     void * shellContext,
     void * commandContext
     );
 
-typedef void (WSMANCALL *WSManPluginShutdownCallback)(void *shutdownContext);
+typedef void (WSMANAPI *WSManPluginShutdownCallback)(void *shutdownContext);
 
-void WSMANCALL WSManPluginRegisterShutdownCallback(
+void WSMANAPI WSManPluginRegisterShutdownCallback(
     WSMAN_PLUGIN_REQUEST *requestDetails,
     WSManPluginShutdownCallback shutdownCallback,
     void *shutdownContext);
 
-typedef void (WSMANCALL *ShutdownPluginFuncPtr)(void* pluginContext);
+typedef void (WSMANAPI *ShutdownPluginFuncPtr)(void* pluginContext);
 
-typedef void (WSMANCALL *WSManPluginShellFuncPtr)(
+typedef void (WSMANAPI *WSManPluginShellFuncPtr)(
     void* pluginContext,
     WSMAN_PLUGIN_REQUEST *requestDetails,
     uint32_t flags,
@@ -1225,7 +1199,7 @@ typedef void (WSMANCALL *WSManPluginShellFuncPtr)(
     WSMAN_DATA *inboundShellInformation
     );
 
-typedef void (WSMANCALL *WSManPluginConnectFuncPtr)(
+typedef void (WSMANAPI *WSManPluginConnectFuncPtr)(
     void* pluginContext,
     WSMAN_PLUGIN_REQUEST *requestDetails,
     uint32_t flags,
@@ -1234,12 +1208,12 @@ typedef void (WSMANCALL *WSManPluginConnectFuncPtr)(
     WSMAN_DATA *inboundConnectInformation
     );
 
-typedef void (WSMANCALL *WSManPluginReleaseShellContextFuncPtr)(
+typedef void (WSMANAPI *WSManPluginReleaseShellContextFuncPtr)(
     void* pluginContext,
     void* shellContext
     );
 
-typedef void (WSMANCALL *WSManPluginCommandFuncPtr)(
+typedef void (WSMANAPI *WSManPluginCommandFuncPtr)(
     void* pluginContext,
     WSMAN_PLUGIN_REQUEST *requestDetails,
     uint32_t flags,
@@ -1248,13 +1222,13 @@ typedef void (WSMANCALL *WSManPluginCommandFuncPtr)(
     WSMAN_COMMAND_ARG_SET *arguments
     );
 
-typedef void (WSMANCALL *WSManPluginReleaseCommandContextFuncPtr)(
+typedef void (WSMANAPI *WSManPluginReleaseCommandContextFuncPtr)(
     void* pluginContext,
     void* shellContext,
     void* commandContext
     );
 
-typedef void (WSMANCALL *WSManPluginSendFuncPtr)(
+typedef void (WSMANAPI *WSManPluginSendFuncPtr)(
     void* pluginContext,
     WSMAN_PLUGIN_REQUEST *requestDetails,
     uint32_t flags,
@@ -1264,7 +1238,7 @@ typedef void (WSMANCALL *WSManPluginSendFuncPtr)(
     WSMAN_DATA *inboundData
     );
 
-typedef void (WSMANCALL *WSManPluginReceiveFuncPtr)(
+typedef void (WSMANAPI *WSManPluginReceiveFuncPtr)(
     void* pluginContext,
     WSMAN_PLUGIN_REQUEST *requestDetails,
     uint32_t flags,
@@ -1273,7 +1247,7 @@ typedef void (WSMANCALL *WSManPluginReceiveFuncPtr)(
     WSMAN_STREAM_ID_SET* streamSet
     );
 
-typedef void (WSMANCALL *WSManPluginSignalFuncPtr)(
+typedef void (WSMANAPI *WSManPluginSignalFuncPtr)(
     void* pluginContext,
     WSMAN_PLUGIN_REQUEST *requestDetails,
     uint32_t flags,
@@ -1281,7 +1255,7 @@ typedef void (WSMANCALL *WSManPluginSignalFuncPtr)(
     void* commandContext,
     WCHAR *code);
 
-typedef void (WSMANCALL *WSManPluginShellCloseFuncPtr)(
+typedef void (WSMANAPI *WSManPluginShellCloseFuncPtr)(
    void* pluginContext,
    void* shellContext);
 
@@ -1301,8 +1275,11 @@ typedef struct _PwrshPluginWkr_Ptrs
 } PwrshPluginWkr_Ptrs;
 
 /* Function that calls into powershell to get the full set of function pointers */
-typedef uint32_t (WSMANCALL *InitPluginWkrPtrsFuncPtr)(PwrshPluginWkr_Ptrs* wkrPtrs);
+typedef uint32_t (WSMANAPI *InitPluginWkrPtrsFuncPtr)(PwrshPluginWkr_Ptrs* wkrPtrs);
 
+// Jetify WSMan APIs
 
+bool WSManDll_Init();
+void WSManDll_Uninit();
 
-#endif /* WSMAN_API_H */
+#endif /* JETIFY_WSMAN_H */
