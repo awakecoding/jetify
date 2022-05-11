@@ -117,14 +117,8 @@ void Jetify_LogEnvInit()
     if (envvar) {
         int ival = atoi(envvar);
 
-        Jetify_SetLogEnabled(true);
-
         if ((ival >= 0) && (ival <= 6)) {
             Jetify_SetLogLevel((uint32_t) ival);
-
-            if (ival == JETIFY_LOG_OFF) {
-                Jetify_SetLogEnabled(false);
-            }
         }
         else {
             if (!strcmp(envvar, "TRACE")) {
@@ -147,8 +141,11 @@ void Jetify_LogEnvInit()
             }
             else if (!strcmp(envvar, "OFF")) {
                 Jetify_SetLogLevel(JETIFY_LOG_OFF);
-                Jetify_SetLogEnabled(false);
             }
+        }
+
+        if (g_LogLevel != JETIFY_LOG_OFF) {
+            g_LogEnabled = true;
         }
     }
 

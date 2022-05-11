@@ -158,7 +158,7 @@ bool WSManDll_Init()
 
     memset(dll, 0, sizeof(WSManDll));
 
-    if (WSManDll_ShouldInit()) {
+    if (!WSManDll_ShouldInit()) {
         return true;
     }
 

@@ -3,6 +3,33 @@ cmake_minimum_required(VERSION 3.8)
 
 project(Jetify C)
 
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+set(VERSION_STRING "1.0.0.0")
+
+string(REGEX REPLACE "([0-9]+).[0-9]+.[0-9]+.[0-9]+" "\\1" JETIFY_VERSION_MAJOR ${VERSION_STRING})
+string(REGEX REPLACE "[0-9]+.([0-9]+).[0-9]+.[0-9]+" "\\1" JETIFY_VERSION_MINOR ${VERSION_STRING})
+string(REGEX REPLACE "[0-9]+.[0-9]+.([0-9]+).[0-9]+" "\\1" JETIFY_VERSION_PATCH ${VERSION_STRING})
+string(REGEX REPLACE "[0-9]+.[0-9]+.[0-9]+.([0-9]+)" "\\1" JETIFY_VERSION_BUILD ${VERSION_STRING})
+set(JETIFY_VERSION "${JETIFY_VERSION_MAJOR}.${JETIFY_VERSION_MINOR}.${JETIFY_VERSION_PATCH}.${JETIFY_VERSION_BUILD}")
+
+message(STATUS "VERSION: ${JETIFY_VERSION}")
+
+set(JETIFY_NAME "jetify")
+set(JETIFY_VENDOR "Devolutions Inc.")
+set(JETIFY_COPYRIGHT "Copyright 2022 ${JETIFY_VENDOR}")
+
+if(WIN32)
+    include(WindowsRC)
+	include(MSVCRuntime)
+
+	if(NOT DEFINED MSVC_RUNTIME)
+		set(MSVC_RUNTIME "static")
+	endif()
+
+	configure_msvc_runtime()
+endif()
+
 if(WIN32)
 	set(C_FLAGS "")
 	set(C_FLAGS "${C_FLAGS} -D_UNICODE")
@@ -54,8 +81,22 @@ if(WIN32)
         ApiHooks.h)
 endif()
 
+set(JETIFY_RESOURCES
+    jetify.rc)
+
+windows_rc_generate_version_info(
+    NAME "${JETIFY_NAME}" TYPE "DLL"
+    VERSION "${JETIFY_VERSION}"
+    FILENAME "${JETIFY_NAME}.dll"
+    VENDOR "${JETIFY_VENDOR}"
+    COPYRIGHT "${JETIFY_COPYRIGHT}"
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/version.rc)
+
+source_group("Resources" FILES ${JETIFY_RESOURCES})
+
 add_library(jetify SHARED
-    ${JETIFY_SOURCES})
+    ${JETIFY_SOURCES}
+    ${JETIFY_RESOURCES})
 
 if(WIN32)
     target_link_libraries(jetify detours)
